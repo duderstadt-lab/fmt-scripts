@@ -14,7 +14,7 @@
 #@ Integer (value=100) driftZeroRegionEnd
 #@ ImageJ ij
 #@ LogService logService
-  
+
 import de.mpg.biochem.mars.molecule.*;
 import de.mpg.biochem.mars.table.*;
 import de.mpg.biochem.mars.util.*;
@@ -22,18 +22,38 @@ import de.mpg.biochem.mars.molecule.commands.*
 
 archive.lock()
 
-//Start log
+//BUILD LOG
 String titleBlock = LogBuilder.buildTitleBlock("FMT Pipeline 1 - Start")
 logService.info(titleBlock)
 archive.addLogMessage(titleBlock)
 
 logger = new LogBuilder()
-logger.addParameter("FMT Pipeline 1 Verion", 1)
+logger.addParameter("FMT Pipeline 1 Verion", 2)
+logger.addParameter("stuckRevThreshold", stuckRevThreshold)
+logger.addParameter("stuckMSDThreshold", stuckMSDThreshold)
+logger.addParameter("minLength", minLength)
+logger.addParameter("doubleCoilingLowerBound", doubleCoilingLowerBound)
+logger.addParameter("doubleCoilingUpperBound", doubleCoilingUpperBound)
+logger.addParameter("enzymaticLowerBound", enzymaticLowerBound)
+logger.addParameter("enzymaticUpperBound", enzymaticUpperBound)
+logger.addParameter("turns_per_second", turns_per_second)
+logger.addParameter("turns_per_cycle", turns_per_cycle)
+logger.addParameter("driftZeroRegionStart", driftZeroRegionStart)
+logger.addParameter("driftZeroRegionEnd", driftZeroRegionEnd)
+
+//ADD PARAMETERS HERE
+//logger.addParameter("name", value)
+
+String parameterList = logger.buildParameterList();
+logService.info(parameterList)
+archive.addLogMessage(parameterList)
+
+//DONE BUILDING LOG
 
 //Check to make sure there is only one metadata item
 if (archive.getNumberOfImageMetadataRecords() > 1) {
 	logService.info(logger.buildParameterList())
-	logService.info("More than one MarsImageMetadata item found - aborting.")	
+	logService.info("More than one MarsImageMetadata item found - aborting.")
 	logService.info(LogBuilder.endBlock(false))
 
 	archive.addLogMessage(logger.buildParameterList())
@@ -41,11 +61,11 @@ if (archive.getNumberOfImageMetadataRecords() > 1) {
 	archive.addLogMessage(LogBuilder.endBlock(false));
 
 	archive.unlock()
-	
+
 	return;
 }
 
-//Build input parameters
+//Get regions
 MarsImageMetadata metadata = archive.getImageMetadata(0);
 
 coil20_Positive_Peak = metadata.getRegion("coil20 Positive Peak")
@@ -66,22 +86,12 @@ Positive_Coiling_Slope = metadata.getRegion("Positive Coiling Slope")
 Before_Enzyme = metadata.getRegion("Before Enzyme")
 After_Enzyme = metadata.getRegion("After Enzyme")
 
-logger.addParameter("stuckRevThreshold", stuckRevThreshold)
-logger.addParameter("stuckMSDThreshold", stuckMSDThreshold)
-logger.addParameter("minLength", minLength)
-logger.addParameter("doubleCoilingLowerBound", doubleCoilingLowerBound)
-logger.addParameter("doubleCoilingUpperBound", doubleCoilingUpperBound)
-logger.addParameter("enzymaticLowerBound", enzymaticLowerBound)
-logger.addParameter("enzymaticUpperBound", enzymaticUpperBound)
-
-String parameterList = logger.buildParameterList();
-logService.info(parameterList)
-archive.addLogMessage(parameterList)
+Force2p5 = metadata.getRegion("Force2p5")
 
 archive.getMoleculeUIDs().parallelStream().forEach({ UID ->
 	Molecule molecule = archive.get(UID)
 	MarsTable table = molecule.getDataTable()
-      
+
 	//RegionDifferenceCalculatorCommand.calcRegionDifference(molecule, xColumn, yColumn, regionOne, regionTwo, parameterName)
     //coil20
 	RegionDifferenceCalculatorCommand.calcRegionDifference(molecule, "slice", "x", coil20_Positive_Peak, coil20_Negative_Peak, "coil20")
@@ -149,11 +159,11 @@ archive.getMoleculeUIDs().parallelStream().forEach({ UID ->
 	}
 
 	//enzymatic
-	if (molecule.hasTag("singleTether") &&\
-		molecule.getParameter("enzymatic") > enzymaticLowerBound &&\
-		molecule.getParameter("enzymatic") < enzymaticUpperBound) {
-			molecule.addTag("chi")
-	}
+	//if (molecule.hasTag("singleTether") &&\
+	//	molecule.getParameter("enzymatic") > enzymaticLowerBound &&\
+	//	molecule.getParameter("enzymatic") < enzymaticUpperBound) {
+	//		molecule.addTag("chi")
+	//}
 
 	archive.put(molecule)
 })
@@ -208,18 +218,36 @@ String titleBlock2 = LogBuilder.buildTitleBlock("FMT Pipeline 1 - End")
 logService.info(titleBlock2)
 archive.addLogMessage(titleBlock2)
 
-logger2 = new LogBuilder()
-logger2.addParameter("turns_per_second", turns_per_second)
-logger2.addParameter("turns_per_cycle", turns_per_cycle)
-logger2.addParameter("driftZeroRegionStart", driftZeroRegionStart)
-logger2.addParameter("driftZeroRegionEnd", driftZeroRegionEnd)
+//Force Calculation
+archive.getMoleculeUIDs().parallelStream().forEach({ UID ->
+      Molecule molecule = archive.get(UID)
+      MarsTable table = molecule.getDataTable()
 
-String parameterList2 = logger2.buildParameterList();
-logService.info(parameterList2)
-archive.addLogMessage(parameterList2)
+	 double msd = table.msd("y_drift_corr", "slice", Force2p5.getStart(), Force2p5.getEnd());   //inserts different start and stop slice with each loop
+	 double convers = Math.pow(10,-6)*1.56;
+	 double temperature = 296.15;
+	 double persistenceLength = 35*Math.pow(10,-9);
+	 double L0 = 6.8*Math.pow(10,-6);
+	 msd = msd*convers*convers
+	 double[] solution;
+	 try {
+	 	solution = MarsMath.calculateForceAndLength(persistenceLength, L0, temperature, msd);
+	 } catch (Exception e) {
+	 	return;
+	 }
+	
+	 double force = solution[0]
+	 double length = solution[1]
+	 String force1 = "Force_PL35";			//make Force_2.5, Force_5 for different flow rates
+	 String length1 = "Length_PL35";			// similarly for length
+
+	 molecule.setParameter(force1, force);			// !!!! which one is correct? how can i insert a string here?
+	 molecule.setParameter(length1, length);		// do i have to add something like str(force1)?
+      
+      archive.put(molecule)
+ })
 
 //Calculate poscycles and negcycles on a molecules-by-molecule basis
-
 archive.getMoleculeUIDs().parallelStream().forEach({ UID ->
       Molecule molecule = archive.get(UID)
       MarsTable table = molecule.getDataTable()
@@ -242,7 +270,7 @@ archive.getMoleculeUIDs().parallelStream().forEach({ UID ->
 
 	  	if (!table.hasColumn("negcycles"))
 			table.appendColumn("negcycles")
-	
+
 		for (int row = 0; row < table.getRowCount(); row++) {
 			double conversion = (1)*(turns_per_second/neg_coils_per_second[2])/turns_per_cycle
 			table.setValue("negcycles", row, conversion*table.getValue("x_drift_corr", row))
@@ -306,8 +334,8 @@ archive.getMoleculeUIDs().parallelStream().forEach({ UID ->
 
 	      archive.put(molecule)
 	})
-	
+
 logService.info(LogBuilder.endBlock(true))
 archive.addLogMessage(LogBuilder.endBlock(true))
-   
+
 archive.unlock()
