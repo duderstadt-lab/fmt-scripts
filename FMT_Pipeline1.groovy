@@ -26,7 +26,7 @@ import de.mpg.biochem.mars.molecule.commands.*
 
 archive.lock()
 
-
+//test
 //BUILD LOG
 String titleBlock = LogBuilder.buildTitleBlock("FMT Pipeline 1 - Start")
 logService.info(titleBlock)
