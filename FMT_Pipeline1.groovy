@@ -24,6 +24,9 @@ archive.lock()
 
 
 
+
+
+
 //BUILD LOG
 String titleBlock = LogBuilder.buildTitleBlock("FMT Pipeline 1 - Start")
 logService.info(titleBlock)
@@ -249,7 +252,7 @@ archive.getMoleculeUIDs().parallelStream().forEach({ UID ->
       archive.put(molecule)
  })
 
- 
+
 //Calculate poscycles and negcycles on a molecules-by-molecule basis
 archive.getMoleculeUIDs().parallelStream().forEach({ UID ->
       Molecule molecule = archive.get(UID)
