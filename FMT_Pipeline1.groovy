@@ -22,6 +22,8 @@ import de.mpg.biochem.mars.molecule.commands.*
 
 archive.lock()
 
+
+
 //BUILD LOG
 String titleBlock = LogBuilder.buildTitleBlock("FMT Pipeline 1 - Start")
 logService.info(titleBlock)
@@ -235,7 +237,7 @@ archive.getMoleculeUIDs().parallelStream().forEach({ UID ->
 	 } catch (Exception e) {
 	 	return;
 	 }
-	
+
 	 double force = solution[0]
 	 double length = solution[1]
 	 String force1 = "Force_PL35";			//make Force_2.5, Force_5 for different flow rates
@@ -243,7 +245,7 @@ archive.getMoleculeUIDs().parallelStream().forEach({ UID ->
 
 	 molecule.setParameter(force1, force);			// !!!! which one is correct? how can i insert a string here?
 	 molecule.setParameter(length1, length);		// do i have to add something like str(force1)?
-      
+
       archive.put(molecule)
  })
 
