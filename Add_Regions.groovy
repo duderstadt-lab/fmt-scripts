@@ -5,6 +5,7 @@ import de.mpg.biochem.mars.table.*;
 import de.mpg.biochem.mars.util.*;
 
 MarsImageMetadata metadata = archive.getImageMetadata(0);
+
 archive.lock()
 //MarsRegion(name, column, start, end, hex color, opacity (0-1))
 
