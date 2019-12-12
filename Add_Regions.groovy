@@ -5,7 +5,7 @@ import de.mpg.biochem.mars.table.*;
 import de.mpg.biochem.mars.util.*;
 
 MarsImageMetadata metadata = archive.getImageMetadata(0);
-
+archive.lock()
 //MarsRegion(name, column, start, end, hex color, opacity (0-1))
 
 metadata.putRegion(new MarsRegion("coil20 Positive Peak", "slice", 1135, 1145, "#FFCA28", 0.2))
@@ -31,3 +31,5 @@ metadata.putRegion(new MarsRegion("After Enzyme", "slice", 7800, 7820, "#FFCA28"
 metadata.putRegion(new MarsRegion("Force2p5", "slice", 1710, 2110, "#F44336", 0.2))
 
 archive.putImageMetadata(metadata)
+
+archive.unlock()
