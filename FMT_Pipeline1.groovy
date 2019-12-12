@@ -12,6 +12,10 @@
 #@ Double (value=2) turns_per_cycle
 #@ Integer (value=1) driftZeroRegionStart
 #@ Integer (value=100) driftZeroRegionEnd
+#@ Double (value=Math.pow(10,-6)*1.56) conversionPixelToMicron
+#@ Double (value=296.15) temperature
+#@ Double (value=35*Math.pow(10,-9)) persistenceLength
+#@ Double (value=6.8*Math.pow(10,-6)) contourLength
 #@ ImageJ ij
 #@ LogService logService
 
@@ -21,10 +25,6 @@ import de.mpg.biochem.mars.util.*;
 import de.mpg.biochem.mars.molecule.commands.*
 
 archive.lock()
-
-
-
-
 
 
 //BUILD LOG
@@ -44,7 +44,10 @@ logger.addParameter("enzymaticUpperBound", enzymaticUpperBound)
 logger.addParameter("turns_per_second", turns_per_second)
 logger.addParameter("turns_per_cycle", turns_per_cycle)
 logger.addParameter("driftZeroRegionStart", driftZeroRegionStart)
-logger.addParameter("driftZeroRegionEnd", driftZeroRegionEnd)
+logger.addParameter("conversionPixelToMicron", conversionPixelToMicron)
+logger.addParameter("temperature", temperature)
+logger.addParameter("persistenceLength", persistenceLength)
+logger.addParameter("contourLength", contourLength)
 
 //ADD PARAMETERS HERE
 //logger.addParameter("name", value)
@@ -229,14 +232,11 @@ archive.getMoleculeUIDs().parallelStream().forEach({ UID ->
       MarsTable table = molecule.getDataTable()
 
 	 double msd = table.msd("y_drift_corr", "slice", Force2p5.getStart(), Force2p5.getEnd());   //inserts different start and stop slice with each loop
-	 double convers = Math.pow(10,-6)*1.56;
-	 double temperature = 296.15;
-	 double persistenceLength = 35*Math.pow(10,-9);
-	 double L0 = 6.8*Math.pow(10,-6);
-	 msd = msd*convers*convers
+
+	 msd = msd*conversionPixelToMicron*conversionPixelToMicron
 	 double[] solution;
 	 try {
-	 	solution = MarsMath.calculateForceAndLength(persistenceLength, L0, temperature, msd);
+	 	solution = MarsMath.calculateForceAndLength(persistenceLength, contourLength, temperature, msd);
 	 } catch (Exception e) {
 	 	return;
 	 }
