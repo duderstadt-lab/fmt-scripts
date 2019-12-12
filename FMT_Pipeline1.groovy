@@ -249,6 +249,7 @@ archive.getMoleculeUIDs().parallelStream().forEach({ UID ->
       archive.put(molecule)
  })
 
+ 
 //Calculate poscycles and negcycles on a molecules-by-molecule basis
 archive.getMoleculeUIDs().parallelStream().forEach({ UID ->
       Molecule molecule = archive.get(UID)
