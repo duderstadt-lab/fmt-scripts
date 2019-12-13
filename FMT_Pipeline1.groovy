@@ -225,13 +225,15 @@ archive.lock()
 String titleBlock2 = LogBuilder.buildTitleBlock("FMT Pipeline 1 - End")
 logService.info(titleBlock2)
 archive.addLogMessage(titleBlock2)
+archive.addLogMessage("Starting force calculation...")
+logService.info("Starting force calculation...")
 
 //Force Calculation
-archive.getMoleculeUIDs().parallelStream().forEach({ UID ->
+archive.getMoleculeUIDs().parallelStream().forEach{ UID ->
       Molecule molecule = archive.get(UID)
       MarsTable table = molecule.getDataTable()
 
-	 double msd = table.msd("y_drift_corr", "slice", Force2p5.getStart(), Force2p5.getEnd());   //inserts different start and stop slice with each loop
+	 double msd = table.msd("y_drift_corr", "slice", Force2p5.getStart(), Force2p5.getEnd())   //inserts different start and stop slice with each loop
 
 	 msd = msd*conversionPixelToMicron*conversionPixelToMicron
 	 double[] solution;
@@ -250,8 +252,9 @@ archive.getMoleculeUIDs().parallelStream().forEach({ UID ->
 	 molecule.setParameter(length1, length);		// do i have to add something like str(force1)?
 
       archive.put(molecule)
- })
-
+ }
+archive.addLogMessage("Done with force calculation...")
+logService.info("Done with force calculation...")
 
 //Calculate poscycles and negcycles on a molecules-by-molecule basis
 archive.getMoleculeUIDs().parallelStream().forEach({ UID ->
