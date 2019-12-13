@@ -12,10 +12,10 @@
 #@ Double (value=2) turns_per_cycle
 #@ Integer (value=1) driftZeroRegionStart
 #@ Integer (value=100) driftZeroRegionEnd
-#@ Double (value=Math.pow(10,-6)*1.56) conversionPixelToMicron
+#@ Double (value=1.56E-6) conversionPixelToMicron
 #@ Double (value=296.15) temperature
-#@ Double (value=35*Math.pow(10,-9)) persistenceLength
-#@ Double (value=6.8*Math.pow(10,-6)) contourLength
+#@ Double (value=3.5E-8) persistenceLength
+#@ Double (value=6.8E-6) contourLength
 #@ ImageJ ij
 #@ LogService logService
 
