@@ -1,6 +1,7 @@
 #@ MoleculeArchive archive
 #@ Double (value=0.05) stuckRevThreshold
-#@ Double (value=0.2) stuckMSDThreshold
+#@ Double (value=0.1) stuckMSDThresholdx
+#@ Double (value=0.2) stuckMSDThresholdy
 #@ Integer (value=4500) minLength
 #@ Double (value=0.0009) doubleCoilingLowerBound
 #@ Double (value=10) doubleCoilingUpperBound
@@ -8,7 +9,7 @@
 #@ Double (value=5) coilable20UpperBound
 #@ Double (value=0.2) enzymaticLowerBound
 #@ Double (value=6) enzymaticUpperBound
-#@ Double (value=1) turns_per_second
+#@ Double (value=0.25) turns_per_slice
 #@ Double (value=2) turns_per_cycle
 #@ Integer (value=1) driftZeroRegionStart
 #@ Integer (value=100) driftZeroRegionEnd
@@ -35,13 +36,14 @@ archive.addLogMessage(titleBlock)
 logger = new LogBuilder()
 logger.addParameter("FMT Pipeline 1 Verion", 2)
 logger.addParameter("stuckRevThreshold", stuckRevThreshold)
-logger.addParameter("stuckMSDThreshold", stuckMSDThreshold)
+logger.addParameter("stuckMSDThresholdx", stuckMSDThresholdx)
+logger.addParameter("stuckMSDThresholdy", stuckMSDThresholdy)
 logger.addParameter("minLength", minLength)
 logger.addParameter("doubleCoilingLowerBound", doubleCoilingLowerBound)
 logger.addParameter("doubleCoilingUpperBound", doubleCoilingUpperBound)
 logger.addParameter("enzymaticLowerBound", enzymaticLowerBound)
 logger.addParameter("enzymaticUpperBound", enzymaticUpperBound)
-logger.addParameter("turns_per_second", turns_per_second)
+logger.addParameter("turns_per_slice", turns_per_slice)
 logger.addParameter("turns_per_cycle", turns_per_cycle)
 logger.addParameter("driftZeroRegionStart", driftZeroRegionStart)
 logger.addParameter("conversionPixelToMicron", conversionPixelToMicron)
@@ -96,6 +98,19 @@ After_Enzyme = metadata.getRegion("After Enzyme")
 
 Force2p5 = metadata.getRegion("Force2p5")
 
+//ADD Time
+final AddTimeCommand addTime = new AddTimeCommand();
+addTime.setContext(ij.getContext());
+
+//Set all the input parameters
+addTime.setArchive(archive);
+
+addTime.run();
+
+sleep(1000)
+
+archive.lock()
+
 archive.getMoleculeUIDs().parallelStream().forEach({ UID ->
 	Molecule molecule = archive.get(UID)
 	MarsTable table = molecule.getDataTable()
@@ -116,7 +131,7 @@ archive.getMoleculeUIDs().parallelStream().forEach({ UID ->
 	RegionDifferenceCalculatorCommand.calcRegionDifference(molecule, "slice", "y", Last_Reversal_RF, Last_Reversal_FF, "rev_end_y")
 
 	//Enzymatic Activity Detection
-	RegionDifferenceCalculatorCommand.calcRegionDifference(molecule, "slice", "x", Before_Enzyme, After_Enzyme, "enzymatic")
+	//RegionDifferenceCalculatorCommand.calcRegionDifference(molecule, "slice", "x", Before_Enzyme, After_Enzyme, "enzymatic")
 
 	//MSDCalculatorCommand.calcMSD(molecule, column, parameterName)
 	//MSD
@@ -137,8 +152,9 @@ archive.getMoleculeUIDs().parallelStream().forEach({ UID ->
 		}
 
 	//stuckMSD
-	if (molecule.getParameter("x_MSD") < stuckMSDThreshold &&\
-		molecule.getParameter("y_MSD") < stuckMSDThreshold) {
+	if (molecule.hasTag("stuckRev") &&\
+		molecule.getParameter("x_MSD") < stuckMSDThresholdx &&\
+		molecule.getParameter("y_MSD") < stuckMSDThresholdy) {
 			molecule.addTag("stuckMSD")
 	}
 
@@ -261,27 +277,27 @@ archive.getMoleculeUIDs().parallelStream().forEach({ UID ->
       Molecule molecule = archive.get(UID)
       MarsTable table = molecule.getDataTable()
 
-	  double[] pos_coils_per_second = table.linearRegression("Time (s)", "x_drift_corr", Positive_Coiling_Slope.getStart(), Positive_Coiling_Slope.getEnd())
+	  double[] pos_coils_per_slice = table.linearRegression("slice", "x_drift_corr", Positive_Coiling_Slope.getStart(), Positive_Coiling_Slope.getEnd())
 
-	  molecule.setParameter("pos_coil_slope", pos_coils_per_second[2])
+	  molecule.setParameter("pos_coil_slope", pos_coils_per_slice[2])
 
 	  	if (!table.hasColumn("poscycles"))
 			table.appendColumn("poscycles")
 
 		for (int row = 0; row < table.getRowCount(); row++) {
-			double conversion = (-1)*(turns_per_second/pos_coils_per_second[2])/turns_per_cycle
+			double conversion = (-1)*(turns_per_slice/pos_coils_per_slice[2])/turns_per_cycle
 			table.setValue("poscycles", row, conversion*table.getValue("x_drift_corr", row))
 		}
 
-	  double[] neg_coils_per_second = table.linearRegression("Time (s)", "x_drift_corr", Negative_Coiling_Slope.getStart(), Negative_Coiling_Slope.getEnd())
+	  double[] neg_coils_per_slice = table.linearRegression("slice", "x_drift_corr", Negative_Coiling_Slope.getStart(), Negative_Coiling_Slope.getEnd())
 
-	  molecule.setParameter("neg_coil_slope", neg_coils_per_second[2])
+	  molecule.setParameter("neg_coil_slope", neg_coils_per_slice[2])
 
 	  	if (!table.hasColumn("negcycles"))
 			table.appendColumn("negcycles")
 
 		for (int row = 0; row < table.getRowCount(); row++) {
-			double conversion = (1)*(turns_per_second/neg_coils_per_second[2])/turns_per_cycle
+			double conversion = (1)*(turns_per_slice/neg_coils_per_slice[2])/turns_per_cycle
 			table.setValue("negcycles", row, conversion*table.getValue("x_drift_corr", row))
 		}
 
@@ -329,7 +345,7 @@ archive.getMoleculeUIDs().parallelStream().forEach({ UID ->
 				table.appendColumn("negcyclesG")
 
 			for (int row = 0; row < table.getRowCount(); row++) {
-				double conversion = (1)*(turns_per_second/negCoilGlobal)/turns_per_cycle
+				double conversion = (1)*(turns_per_slice/negCoilGlobal)/turns_per_cycle
 				table.setValue("negcyclesG", row, conversion*table.getValue("x_drift_corr", row))
 			}
 
@@ -337,7 +353,7 @@ archive.getMoleculeUIDs().parallelStream().forEach({ UID ->
 				table.appendColumn("poscyclesG")
 
 			for (int row = 0; row < table.getRowCount(); row++) {
-				double conversion = (-1)*(turns_per_second/posCoilGlobal)/turns_per_cycle
+				double conversion = (-1)*(turns_per_slice/posCoilGlobal)/turns_per_cycle
 				table.setValue("poscyclesG", row, conversion*table.getValue("x_drift_corr", row))
 			}
 
