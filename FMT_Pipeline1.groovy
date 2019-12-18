@@ -104,6 +104,7 @@ Force2p5 = metadata.getRegion("Force2p5")
 logService.info("Adding time...")
 AddTimeCommand.addTime(archive)
 
+logService.info("Calculating region differences and adding tags...")
 archive.getMoleculeUIDs().parallelStream().forEach({ UID ->
 	Molecule molecule = archive.get(UID)
 	MarsTable table = molecule.getDataTable()
@@ -185,8 +186,6 @@ archive.getMoleculeUIDs().parallelStream().forEach({ UID ->
 	archive.put(molecule)
 })
 
-//Finish Log
-logService.info(LogBuilder.endBlock())
 archive.addLogMessage(LogBuilder.endBlock())
 
 //Drift Calculator
