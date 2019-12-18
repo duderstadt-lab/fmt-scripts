@@ -197,7 +197,7 @@ logService.info("Correcting for drift...")
 DriftCorrectorCommand.correctDrift(archive, driftZeroRegionStart, driftZeroRegionEnd, "x_drift", "y_drift", "x", "y", "x_drift_corr", "y_drift_corr", false)
 
 //Force Calculation
-logService.info("Calculating force, this might take a while...")
+logService.info("Calculating force...")
 archive.getMoleculeUIDs().parallelStream().forEach{ UID ->
       Molecule molecule = archive.get(UID)
       MarsTable table = molecule.getDataTable()
