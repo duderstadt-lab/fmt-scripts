@@ -1,4 +1,4 @@
-#@ MoleculeArchive archive
+@ MoleculeArchive archive
 #@ Double (value=0.05) stuckRevThreshold
 #@ Double (value=0.1) stuckMSDThresholdx
 #@ Double (value=0.2) stuckMSDThresholdy
@@ -11,8 +11,8 @@
 #@ Double (value=6) enzymaticUpperBound
 #@ Double (value=0.25) turns_per_slice
 #@ Double (value=2) turns_per_cycle
-#@ Integer (value=1) driftZeroRegionStart
-#@ Integer (value=100) driftZeroRegionEnd
+#@ Integer (value=1600) driftZeroRegionStart
+#@ Integer (value=1700) driftZeroRegionEnd
 #@ Double (value=1.56E-6) conversionPixelToMicron
 #@ Double (value=296.15) temperature
 #@ Double (value=3.5E-8) persistenceLength
@@ -34,7 +34,7 @@ logService.info(titleBlock)
 archive.addLogMessage(titleBlock)
 
 logger = new LogBuilder()
-logger.addParameter("FMT Pipeline 1 Verion", 2)
+logger.addParameter("FMT Pipeline 1 Verion", 3)
 logger.addParameter("stuckRevThreshold", stuckRevThreshold)
 logger.addParameter("stuckMSDThresholdx", stuckMSDThresholdx)
 logger.addParameter("stuckMSDThresholdy", stuckMSDThresholdy)
@@ -90,6 +90,8 @@ First_Reversal_FF = metadata.getRegion("First Reversal FF")
 Last_Reversal_RF = metadata.getRegion("Last Reversal RF")
 Last_Reversal_FF = metadata.getRegion("Last Reversal FF")
 
+Slope_Neg_20 = metadata.getRegion("Slope_Neg_20")
+
 Negative_Coiling_Slope = metadata.getRegion("Negative Coiling Slope")
 Positive_Coiling_Slope = metadata.getRegion("Positive Coiling Slope")
 
@@ -99,17 +101,8 @@ After_Enzyme = metadata.getRegion("After Enzyme")
 Force2p5 = metadata.getRegion("Force2p5")
 
 //ADD Time
-final AddTimeCommand addTime = new AddTimeCommand();
-addTime.setContext(ij.getContext());
-
-//Set all the input parameters
-addTime.setArchive(archive);
-
-addTime.run();
-
-sleep(1000)
-
-archive.lock()
+logService.info("Adding time...")
+AddTimeCommand.addTime(archive)
 
 archive.getMoleculeUIDs().parallelStream().forEach({ UID ->
 	Molecule molecule = archive.get(UID)
@@ -139,7 +132,7 @@ archive.getMoleculeUIDs().parallelStream().forEach({ UID ->
 	MSDCalculatorCommand.calcMSD(molecule, "y", "y_MSD")
 
 	//Calculate slopes
-	output = table.linearRegression("slice","x", Negative_Coiling_Slope.getStart(), Negative_Coiling_Slope.getEnd())
+	output = table.linearRegression("slice","x", Slope_Neg_20.getStart(), Slope_Neg_20.getEnd())
 	molecule.setParameter("Slope_Neg_20", output[2])
 
     //Add Tags
@@ -195,56 +188,17 @@ archive.getMoleculeUIDs().parallelStream().forEach({ UID ->
 //Finish Log
 logService.info(LogBuilder.endBlock())
 archive.addLogMessage(LogBuilder.endBlock())
-archive.unlock()
-
-sleep(1000)
 
 //Drift Calculator
-final DriftCalculatorCommand driftCalc = new DriftCalculatorCommand();
-driftCalc.setContext(ij.getContext());
-
-//Set all the input parameters
-driftCalc.setArchive(archive);
-driftCalc.setBackgroundTag("stuckMSD");
-driftCalc.setInputX("x");
-driftCalc.setInputY("y");
-driftCalc.setOutputX("x_drift");
-driftCalc.setOutputY("y_drift");
-driftCalc.setMode("mean")
-driftCalc.setUseIncompleteTraces(false);
-
-driftCalc.run();
-
-sleep(1000)
+logService.info("Calculating drift...")
+DriftCalculatorCommand.calcDrift(archive, "stuckMSD", "x", "y", "x_drift", "y_drift", false, "mean", "end") 
 
 //Drift Corrector
-final DriftCorrectorCommand driftCorr = new DriftCorrectorCommand();
-driftCorr.setContext(ij.getContext())
-
-//Set all the input parameters
-driftCorr.setArchive(archive)
-driftCorr.setFromSlice(driftZeroRegionStart)
-driftCorr.setToSlice(driftZeroRegionEnd)
-driftCorr.setMetaX("x_drift")
-driftCorr.setMetaY("y_drift")
-driftCorr.setInputX("x")
-driftCorr.setInputY("y")
-driftCorr.setOutputX("x_drift_corr")
-driftCorr.setOutputY("y_drift_corr")
-
-driftCorr.run()
-
-sleep(1000)
-
-archive.lock()
-
-String titleBlock2 = LogBuilder.buildTitleBlock("FMT Pipeline 1 - End")
-logService.info(titleBlock2)
-archive.addLogMessage(titleBlock2)
-archive.addLogMessage("Starting force calculation...")
-logService.info("Starting force calculation...")
+logService.info("Correcting for drift...")
+DriftCorrectorCommand.correctDrift(archive, driftZeroRegionStart, driftZeroRegionEnd, "x_drift", "y_drift", "x", "y", "x_drift_corr", "y_drift_corr", false)
 
 //Force Calculation
+logService.info("Calculating force, this might take a while...")
 archive.getMoleculeUIDs().parallelStream().forEach{ UID ->
       Molecule molecule = archive.get(UID)
       MarsTable table = molecule.getDataTable()
@@ -269,10 +223,9 @@ archive.getMoleculeUIDs().parallelStream().forEach{ UID ->
 
       archive.put(molecule)
  }
-archive.addLogMessage("Done with force calculation...")
-logService.info("Done with force calculation...")
 
 //Calculate poscycles and negcycles on a molecules-by-molecule basis
+logService.info("Calculating molecule-by-molecule cycle numbers...")
 archive.getMoleculeUIDs().parallelStream().forEach({ UID ->
       Molecule molecule = archive.get(UID)
       MarsTable table = molecule.getDataTable()
@@ -309,6 +262,7 @@ archive.getMoleculeUIDs().parallelStream().forEach({ UID ->
 posCoilTable = new MarsTable("PosCoilRates","poscoil")
 negCoilTable = new MarsTable("NegCoilRates","negcoil")
 
+logService.info("Calculating global median positive and negative coiling slopes...")
 archive.getMoleculeUIDs().stream()\
 .filter{ UID -> archive.moleculeHasTag(UID, "singleTether")}\
 //.filter{ UID -> archive.moleculeHasTag(UID, "coilable2p5")}\
@@ -332,11 +286,8 @@ archive.getMoleculeUIDs().stream()\
 posCoilGlobal = posCoilTable.median("poscoil")
 negCoilGlobal = negCoilTable.median("negcoil")
 
-println("median poscoil slope global " + posCoilGlobal)
-println("median negcoil slope global " + negCoilGlobal)
-
 //Use global pos_coil_slope and neg_coil_slope to calculate poscycles and negcycles based on global averages.
-
+logService.info("Calculating global cycle numbers...")
 archive.getMoleculeUIDs().parallelStream().forEach({ UID ->
 	      Molecule molecule = archive.get(UID)
 	      MarsTable table = molecule.getDataTable()
@@ -359,6 +310,15 @@ archive.getMoleculeUIDs().parallelStream().forEach({ UID ->
 
 	      archive.put(molecule)
 	})
+
+String titleBlock2 = LogBuilder.buildTitleBlock("FMT Pipeline 1 - End")
+logService.info(titleBlock2)
+archive.addLogMessage(titleBlock2)
+
+logger2 = new LogBuilder()
+String params = logger2.buildParameterList()
+logService.info(params)
+archive.addLogMessage(params)
 
 logService.info(LogBuilder.endBlock(true))
 archive.addLogMessage(LogBuilder.endBlock(true))
