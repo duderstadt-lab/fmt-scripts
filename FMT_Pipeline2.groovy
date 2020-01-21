@@ -129,9 +129,9 @@ Force2p5 = metadata.getRegion("Force2p5")
 
 Gyrase_Reaction = metadata.getRegion("Gyrase Reaction")
 
-Magrot20f = metadata.getRegion("Magrot20f")
+Magrot_20f = metadata.getRegion("Magrot20f")
 
-Magrot2p5f = metadata.getRegion("Magrot2p5f")
+Magrot_2p5f = metadata.getRegion("Magrot2p5f")
 
 Region_Torque = metadata.getRegion("regionTorque")
 
@@ -269,6 +269,24 @@ archive.getMoleculeUIDs().parallelStream().forEach({ UID ->
 	   molecule.getParameter("enzymatic") < 0.1 &&\
 	   molecule.getParameter("enzymatic") > -0.7){
 	   molecule.addTag("nicked")
+	}
+
+	//tagging track loss and bead loss
+int deadSlice = table.getValue("slice",table.getRowCount()-1)
+
+	if (deadSlice < Magrot_20f.getEnd() && deadSlice > Magrot_20f.getStart()) {
+		molecule.addTag("Magrot20f")
+	}
+	if (deadSlice < Magrot_2p5f.getEnd() && deadSlice > Magrot_2p5f.getStart()) {
+		molecule.addTag("Magrot2p5f")
+	}
+
+	if (deadSlice < Region_Torque.getEnd() && deadSlice > Region_Torque.getStart()) {
+		molecule.addTag("Torque_Break")
+	}
+
+	if (deadSlice < Gyrase_Reaction.getEnd() && deadSlice > Gyrase_Reaction.getStart()) {
+    molecule.addTag("Gyrase_Break")
 	}
 
 	archive.put(molecule)
