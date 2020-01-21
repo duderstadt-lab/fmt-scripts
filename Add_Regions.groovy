@@ -26,13 +26,21 @@ metadata.putRegion(new MarsRegion("Slope_Neg_20", "slice", 350, 450, "#66BB6A", 
 metadata.putRegion(new MarsRegion("Negative Coiling Slope", "slice", 2950, 3050, "#66BB6A", 0.2))
 metadata.putRegion(new MarsRegion("Positive Coiling Slope", "slice", 3750, 3850, "#66BB6A", 0.2))
 
-metadata.putRegion(new MarsRegion("Before Torque Recovery", "slice", 19500, 19520, "#66BB6A", 0.2))
-metadata.putRegion(new MarsRegion("After Torque Recovery", "slice", 20060, 20080, "#66BB6A", 0.2))
-
 metadata.putRegion(new MarsRegion("Before Enzyme", "slice", 4500, 4520, "#42A5F5", 0.2))
 metadata.putRegion(new MarsRegion("After Enzyme", "slice", 7800, 7820, "#FFCA28", 0.2))
 
+metadata.putRegion(new MarsRegion("Before Torque Recovery", "slice", 19500, 19520, "#66BB6A", 0.2))
+metadata.putRegion(new MarsRegion("After Torque Recovery", "slice", 20060, 20080, "#66BB6A", 0.2))
+
 metadata.putRegion(new MarsRegion("Force2p5", "slice", 1660, 2060, "#F44336", 0.2))
+
+metadata.putRegion(new MarsRegion("Gyrase Reaction", "slice", 5000, 7957, "#42A5F5", 0.2))
+
+metadata.putRegion(new MarsRegion("Magrot20f", "slice", 238, 1438, "#F44336", 0.2))
+
+metadata.putRegion(new MarsRegion("Magrot2p5f", "slice", 2770, 4130, "#F44336", 0.2))
+
+metadata.putRegion(new MarsRegion("regionTorque", "slice", 7960, 19718, "#42A5F5", 0.2))
 
 //metadata.putRegion(new MarsRegion("SDSMedium", "slice", 13848, 14085, "#F44336", 0.2))
 
