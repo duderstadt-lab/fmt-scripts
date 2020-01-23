@@ -42,12 +42,12 @@ archive.lock()
 
 //test
 //BUILD LOG
-String titleBlock = LogBuilder.buildTitleBlock("FMT Pipeline 1 - Start")
+String titleBlock = LogBuilder.buildTitleBlock("FMT Pipeline 2 - Start")
 logService.info(titleBlock)
 archive.addLogMessage(titleBlock)
 
 logger = new LogBuilder()
-logger.addParameter("FMT Pipeline 1 Verion", 4)
+logger.addParameter("FMT Pipeline 2 Verion", 1)
 logger.addParameter("stuckRevThreshold", stuckRevThreshold)
 logger.addParameter("stuckMSDThresholdx", stuckMSDThresholdx)
 logger.addParameter("stuckMSDThresholdy", stuckMSDThresholdy)
@@ -270,9 +270,8 @@ archive.getMoleculeUIDs().parallelStream().forEach({ UID ->
 	   molecule.getParameter("enzymatic") > -0.7){
 	   molecule.addTag("nicked")
 	}
-
+ 
 	//tagging track loss and bead loss
-int deadSlice = table.getValue("slice",table.getRowCount()-1)
 
 	if (deadSlice < Magrot_20f.getEnd() && deadSlice > Magrot_20f.getStart()) {
 		molecule.addTag("Magrot20f")
@@ -341,12 +340,12 @@ archive.getMoleculeUIDs().parallelStream().forEach{ UID ->
 				if (msdSlideForce < MinMSD)
 					MinMSD = msdSlideForce
 
-				msdColSlide.add(msdSlideForce)
+				msdColSlice.add(msdSlideForce)
 	      	}
 	  }
 
 	  MarsTable tempTable = new MarsTable("MSDs table")
-	  tempTable.add(msdColSlide)
+	  tempTable.add(msdColSlice)
 
 	  double msdSTD = tempTable.std("MSDs")
 	  double meanMSD = tempTable.mean("MSDs")
