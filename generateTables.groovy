@@ -61,8 +61,8 @@ def generateTables(MoleculeArchive archive, String filePath) {
       //positive coil slope burst
      if (!Double.isNaN(molecule.getParameter("pos_coil_slope"))) {
          double timeWindowSize = 12.5
-         double startTime = 1100
-         double endTime = 1940
+         double startTime = archive.getImageMetadata(0).getDataTable().rowStream().filter{row -> row.getValue("slice") == 22}.findFirst().get().getValue("Time (s)")
+         double endTime = archive.getImageMetadata(0).getDataTable().rowStream().filter{row -> row.getValue("slice") == 22}.findFirst().get().getValue("Time (s)")
 
          if (table.getValue("Time (s)", table.getRowCount()-1) < endTime) {
            endTime = table.getValue("Time (s)", table.getRowCount()-1) - 4
