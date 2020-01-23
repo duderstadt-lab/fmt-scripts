@@ -47,7 +47,7 @@ logService.info(titleBlock)
 archive.addLogMessage(titleBlock)
 
 logger = new LogBuilder()
-logger.addParameter("FMT Pipeline 2 Verion", 1)
+logger.addParameter("FMT Pipeline 2 Version", 1)
 logger.addParameter("stuckRevThreshold", stuckRevThreshold)
 logger.addParameter("stuckMSDThresholdx", stuckMSDThresholdx)
 logger.addParameter("stuckMSDThresholdy", stuckMSDThresholdy)
@@ -270,7 +270,7 @@ archive.getMoleculeUIDs().parallelStream().forEach({ UID ->
 	   molecule.getParameter("enzymatic") > -0.7){
 	   molecule.addTag("nicked")
 	}
- 
+
 	//tagging track loss and bead loss
 
 	if (deadSlice < Magrot_20f.getEnd() && deadSlice > Magrot_20f.getStart()) {
