@@ -1,4 +1,5 @@
 @ MoleculeArchive archive
+//setting all the thresholds 
 #@ Double (value=0.05) stuckRevThreshold
 #@ Double (value=0.1) stuckMSDThresholdx
 #@ Double (value=0.2) stuckMSDThresholdy
@@ -40,8 +41,7 @@ import org.scijava.table.*
 
 archive.lock()
 
-//test
-//BUILD LOG
+//BUILD LOG - recording all the parameter thresholds used
 String titleBlock = LogBuilder.buildTitleBlock("FMT Pipeline 2 - Start")
 logService.info(titleBlock)
 archive.addLogMessage(titleBlock)
@@ -75,6 +75,8 @@ logger.addParameter("reversalLowerBound", reversalLowerBound)
 logger.addParameter("reversalUpperBound", reversalUpperBound)
 logger.addParameter("reversalLowerBoundNeg", reversalLowerBoundNeg)
 logger.addParameter("reversalUpperBoundNeg", reversalUpperBoundNeg)
+logger.addParameter("slidingForceWindow", slidingForceWindow)
+logger.addParameter("stdSlidingForce", stdSlidingForce)
 //ADD PARAMETERS HERE
 //logger.addParameter("name", value)
 
@@ -261,7 +263,7 @@ archive.getMoleculeUIDs().parallelStream().forEach({ UID ->
 		molecule.addTag("mobile_end_neg")
 	}
 
-	//taging nicked molecule
+	//tagging nicked molecule
 	if(molecule.hasTag("mobile_begin") &&\
 	  !molecule.hasTag("coilable20") &&\
 	  !molecule.hasTag("coilable2p5") &&\
@@ -271,7 +273,7 @@ archive.getMoleculeUIDs().parallelStream().forEach({ UID ->
 	   molecule.addTag("nicked")
 	}
 
-	//tagging track loss and bead loss
+	//tagging bead loss
 
 	if (deadSlice < Magrot_20f.getEnd() && deadSlice > Magrot_20f.getStart()) {
 		molecule.addTag("Magrot20f")
@@ -325,7 +327,7 @@ archive.getMoleculeUIDs().parallelStream().forEach{ UID ->
 	 molecule.setParameter(force1, force);
 	 molecule.setParameter(length1, length);
 
-	 DoubleColumn msdColSlice = new DoubleColumn("MSDs")
+	 DoubleColumn msdColSlide = new DoubleColumn("MSDs")
 
 	  double MaxMSD = 0
 	  double MinMSD = 0
@@ -340,12 +342,12 @@ archive.getMoleculeUIDs().parallelStream().forEach{ UID ->
 				if (msdSlideForce < MinMSD)
 					MinMSD = msdSlideForce
 
-				msdColSlice.add(msdSlideForce)
+				msdColSlide.add(msdSlideForce)
 	      	}
 	  }
 
 	  MarsTable tempTable = new MarsTable("MSDs table")
-	  tempTable.add(msdColSlice)
+	  tempTable.add(msdColSlide)
 
 	  double msdSTD = tempTable.std("MSDs")
 	  double meanMSD = tempTable.mean("MSDs")
@@ -486,7 +488,7 @@ archive.getMoleculeUIDs().parallelStream()\
 
 	archive.put(molecule)
 })
-String titleBlock2 = LogBuilder.buildTitleBlock("FMT Pipeline 1 - End")
+String titleBlock2 = LogBuilder.buildTitleBlock("FMT Pipeline 2 - End")
 logService.info(titleBlock2)
 archive.addLogMessage(titleBlock2)
 
