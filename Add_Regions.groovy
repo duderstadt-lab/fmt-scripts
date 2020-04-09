@@ -1,10 +1,10 @@
 #@ MoleculeArchive archive
 
-import de.mpg.biochem.mars.molecule.*;
-import de.mpg.biochem.mars.table.*;
-import de.mpg.biochem.mars.util.*;
+import de.mpg.biochem.mars.molecule.*
+import de.mpg.biochem.mars.table.*
+import de.mpg.biochem.mars.util.*
 
-MarsImageMetadata metadata = archive.getImageMetadata(0);
+MarsMetadata metadata = archive.getMetadata(0)
 
 archive.lock()
 //MarsRegion(name, column, start, end, hex color, opacity (0-1))
@@ -42,6 +42,6 @@ metadata.putRegion(new MarsRegion("Magrot2p5f", "slice", 2770, 4130, "#F44336", 
 
 metadata.putRegion(new MarsRegion("regionTorque", "slice", 7960, 15155, "#42A5F5", 0.2))
 
-archive.putImageMetadata(metadata)
+archive.putMetadata(metadata)
 
 archive.unlock()
