@@ -1,5 +1,5 @@
 @ MoleculeArchive archive
-//setting all the thresholds 
+//setting all the thresholds
 #@ Double (value=0.05) stuckRevThreshold
 #@ Double (value=0.1) stuckMSDThresholdx
 #@ Double (value=0.2) stuckMSDThresholdy
@@ -42,9 +42,9 @@ import org.scijava.table.*
 archive.lock()
 
 //BUILD LOG - recording all the parameter thresholds used
-String titleBlock = LogBuilder.buildTitleBlock("FMT Pipeline 2 - Start")
+String titleBlock = LogBuilder.buildTitleBlock("FMT Pipeline - Start")
 logService.info(titleBlock)
-archive.addLogMessage(titleBlock)
+archive.logln(titleBlock)
 
 logger = new LogBuilder()
 logger.addParameter("FMT Pipeline 2 Version", 1)
@@ -87,13 +87,13 @@ archive.addLogMessage(parameterList)
 //DONE BUILDING LOG
 
 //Check to make sure there is only one metadata item
-if (archive.getNumberOfImageMetadataRecords() > 1) {
+if (archive.getNumberOfMetadatas() > 1) {
 	logService.info(logger.buildParameterList())
-	logService.info("More than one MarsImageMetadata item found - aborting.")
+	logService.info("More than one MarsMetadata item found - aborting.")
 	logService.info(LogBuilder.endBlock(false))
 
 	archive.addLogMessage(logger.buildParameterList())
-	archive.addLogMessage("More than one MarsImageMetadata item found - aborting.")
+	archive.addLogMessage("More than one MarsMetadata item found - aborting.")
 	archive.addLogMessage(LogBuilder.endBlock(false));
 
 	archive.unlock()
@@ -102,7 +102,7 @@ if (archive.getNumberOfImageMetadataRecords() > 1) {
 }
 
 //Get regions
-MarsImageMetadata metadata = archive.getImageMetadata(0);
+MarsMetadata metadata = archive.getMetadata(0);
 
 coil20_Positive_Peak = metadata.getRegion("coil20 Positive Peak")
 coil20_Negative_Peak = metadata.getRegion("coil20 Negative Peak")
