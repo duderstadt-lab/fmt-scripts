@@ -1,8 +1,7 @@
 @ MoleculeArchive archive
-//setting all the thresholds 
 #@ Double (value=0.05) stuckRevThreshold
-#@ Double (value=0.1) stuckMSDThresholdx
-#@ Double (value=0.2) stuckMSDThresholdy
+#@ Double (value=0.01) stuckMSDThresholdx
+#@ Double (value=0.02) stuckMSDThresholdy
 #@ Integer (value=4500) minLength
 #@ Double (value=6) reversalLowerBound
 #@ Double (value=12) reversalUpperBound
@@ -18,8 +17,6 @@
 #@ Double (value=-0.1) alphaUpperBound
 #@ Double (value=0.2) chiLowerBound
 #@ Double (value=5) chiUpperBound
-#@ Double (value=2) torqueRecoveryLowerBound
-#@ Double (value=6) torqueRecoveryUpperBound
 #@ Double (value=0.25) turns_per_slice
 #@ Double (value=2) turns_per_cycle
 #@ Integer (value=1600) driftZeroRegionStart
@@ -41,21 +38,20 @@ import org.scijava.table.*
 
 archive.lock()
 
-//BUILD LOG - recording all the parameter thresholds used
-String titleBlock = LogBuilder.buildTitleBlock("FMT Pipeline 2 - Start")
+//test
+//BUILD LOG
+String titleBlock = LogBuilder.buildTitleBlock("FMT Pipeline trunc - Start")
 logService.info(titleBlock)
 archive.addLogMessage(titleBlock)
 
 logger = new LogBuilder()
-logger.addParameter("FMT Pipeline 2 Version", 1)
+logger.addParameter("FMT Pipeline truncated version", 1)
 logger.addParameter("stuckRevThreshold", stuckRevThreshold)
 logger.addParameter("stuckMSDThresholdx", stuckMSDThresholdx)
 logger.addParameter("stuckMSDThresholdy", stuckMSDThresholdy)
 logger.addParameter("minLength", minLength)
 logger.addParameter("doubleCoilingLowerBound", doubleCoilingLowerBound)
 logger.addParameter("doubleCoilingUpperBound", doubleCoilingUpperBound)
-logger.addParameter("torqueRecoveryLowerBound", torqueRecoveryLowerBound)
-logger.addParameter("torqueRecoveryUpperBound", torqueRecoveryUpperBound)
 logger.addParameter("coilable2p5LowerBound", coilable2p5LowerBound)
 logger.addParameter("coilable2p5UpperBound", coilable2p5UpperBound)
 logger.addParameter("alphaLowerBound", alphaLowerBound)
@@ -86,23 +82,8 @@ archive.addLogMessage(parameterList)
 
 //DONE BUILDING LOG
 
-//Check to make sure there is only one metadata item
-if (archive.getNumberOfImageMetadataRecords() > 1) {
-	logService.info(logger.buildParameterList())
-	logService.info("More than one MarsImageMetadata item found - aborting.")
-	logService.info(LogBuilder.endBlock(false))
-
-	archive.addLogMessage(logger.buildParameterList())
-	archive.addLogMessage("More than one MarsImageMetadata item found - aborting.")
-	archive.addLogMessage(LogBuilder.endBlock(false));
-
-	archive.unlock()
-
-	return;
-}
-
 //Get regions
-MarsImageMetadata metadata = archive.getImageMetadata(0);
+MarsMetadata metadata = archive.getMetadata(0);
 
 coil20_Positive_Peak = metadata.getRegion("coil20 Positive Peak")
 coil20_Negative_Peak = metadata.getRegion("coil20 Negative Peak")
@@ -113,9 +94,6 @@ coil2p5_Background = metadata.getRegion("coil2p5 Background")
 First_Reversal_RF = metadata.getRegion("First Reversal RF")
 First_Reversal_FF = metadata.getRegion("First Reversal FF")
 
-Last_Reversal_RF = metadata.getRegion("Last Reversal RF")
-Last_Reversal_FF = metadata.getRegion("Last Reversal FF")
-
 Slope_Neg_20 = metadata.getRegion("Slope_Neg_20")
 
 Negative_Coiling_Slope = metadata.getRegion("Negative Coiling Slope")
@@ -124,9 +102,6 @@ Positive_Coiling_Slope = metadata.getRegion("Positive Coiling Slope")
 Before_Enzyme = metadata.getRegion("Before Enzyme")
 After_Enzyme = metadata.getRegion("After Enzyme")
 
-Before_Torque_Recovery = metadata.getRegion("Before Torque Recovery")
-After_Torque_Recovery = metadata.getRegion("After Torque Recovery")
-
 Force2p5 = metadata.getRegion("Force2p5")
 
 Gyrase_Reaction = metadata.getRegion("Gyrase Reaction")
@@ -134,8 +109,6 @@ Gyrase_Reaction = metadata.getRegion("Gyrase Reaction")
 Magrot_20f = metadata.getRegion("Magrot20f")
 
 Magrot_2p5f = metadata.getRegion("Magrot2p5f")
-
-Region_Torque = metadata.getRegion("regionTorque")
 
 //ADD Time
 logService.info("Adding time...")
@@ -157,16 +130,9 @@ archive.getMoleculeUIDs().parallelStream().forEach({ UID ->
 	RegionDifferenceCalculatorCommand.calcRegionDifference(molecule, "slice", "x", First_Reversal_RF, First_Reversal_FF, "rev_begin_x")
 	RegionDifferenceCalculatorCommand.calcRegionDifference(molecule, "slice", "y", First_Reversal_RF, First_Reversal_FF, "rev_begin_y")
 
-	//Last Reversal
-	RegionDifferenceCalculatorCommand.calcRegionDifference(molecule, "slice", "x", Last_Reversal_RF, Last_Reversal_FF, "rev_end_x")
-	RegionDifferenceCalculatorCommand.calcRegionDifference(molecule, "slice", "y", Last_Reversal_RF, Last_Reversal_FF, "rev_end_y")
-
 	//Enzymatic Activity Detection
 	RegionDifferenceCalculatorCommand.calcRegionDifference(molecule, "slice", "x", Before_Enzyme, After_Enzyme, "enzymatic")
-
-	//Torque Recovery
-	RegionDifferenceCalculatorCommand.calcRegionDifference(molecule, "slice", "x", After_Torque_Recovery, Before_Torque_Recovery, "recovery")
-
+	
 	//MSDCalculatorCommand.calcMSD(molecule, column, parameterName)
 	//MSD
 	MSDCalculatorCommand.calcMSD(molecule, "x", "x_MSD")
@@ -178,10 +144,8 @@ archive.getMoleculeUIDs().parallelStream().forEach({ UID ->
 
     //Add Tags
     //stuckRev
-    if (Math.abs(molecule.getParameter("rev_begin_y")) < stuckRevThreshold &&\
-		Math.abs(molecule.getParameter("rev_end_y")) < stuckRevThreshold &&\
-		Math.abs(molecule.getParameter("rev_begin_x")) < stuckRevThreshold &&\
-		Math.abs(molecule.getParameter("rev_end_x")) < stuckRevThreshold) {
+    if (Math.abs(molecule.getParameter("rev_begin_x")) < stuckRevThreshold &&\
+		Math.abs(molecule.getParameter("rev_begin_y")) < stuckRevThreshold) {
 			molecule.addTag("stuckRev")
 		}
 
@@ -221,11 +185,6 @@ archive.getMoleculeUIDs().parallelStream().forEach({ UID ->
 		molecule.getParameter("enzymatic") < chiUpperBound) {
 			molecule.addTag("chimol")
 	}
-	//torqueRecovery
-	if (molecule.getParameter("recovery") > torqueRecoveryLowerBound &&\
-		molecule.getParameter("recovery") < torqueRecoveryUpperBound) {
-			molecule.addTag("torqueRecovery")
-	}
 
 	//shortTrajectory
 	int deadSlice = table.getValue("slice",table.getRowCount()-1)
@@ -245,25 +204,13 @@ archive.getMoleculeUIDs().parallelStream().forEach({ UID ->
 		molecule.addTag("mobile_begin")
 	}
 
-	//reversal end
-	if (molecule.getParameter("rev_end_x") > reversalLowerBound &&\
-		molecule.getParameter("rev_end_x") < reversalUpperBound) {
-		molecule.addTag("mobile_end")
-	}
-
 	//reversal start neg
 	if (molecule.getParameter("rev_begin_x") > reversalLowerBoundNeg &&\
 		molecule.getParameter("rev_begin_x") < reversalUpperBoundNeg) {
 		molecule.addTag("mobile_begin_neg")
 	}
 
-	//reversal end neg
-	if (molecule.getParameter("rev_end_x") > reversalLowerBoundNeg &&\
-		molecule.getParameter("rev_end_x") < reversalUpperBoundNeg) {
-		molecule.addTag("mobile_end_neg")
-	}
-
-	//tagging nicked molecule
+	//taging nicked molecule
 	if(molecule.hasTag("mobile_begin") &&\
 	  !molecule.hasTag("coilable20") &&\
 	  !molecule.hasTag("coilable2p5") &&\
@@ -273,17 +220,13 @@ archive.getMoleculeUIDs().parallelStream().forEach({ UID ->
 	   molecule.addTag("nicked")
 	}
 
-	//tagging bead loss
+	//tagging track loss and bead loss
 
 	if (deadSlice < Magrot_20f.getEnd() && deadSlice > Magrot_20f.getStart()) {
 		molecule.addTag("Magrot20f")
 	}
 	if (deadSlice < Magrot_2p5f.getEnd() && deadSlice > Magrot_2p5f.getStart()) {
 		molecule.addTag("Magrot2p5f")
-	}
-
-	if (deadSlice < Region_Torque.getEnd() && deadSlice > Region_Torque.getStart()) {
-		molecule.addTag("Torque_Break")
 	}
 
 	if (deadSlice < Gyrase_Reaction.getEnd() && deadSlice > Gyrase_Reaction.getStart()) {
@@ -488,7 +431,7 @@ archive.getMoleculeUIDs().parallelStream()\
 
 	archive.put(molecule)
 })
-String titleBlock2 = LogBuilder.buildTitleBlock("FMT Pipeline 2 - End")
+String titleBlock2 = LogBuilder.buildTitleBlock("FMT Pipeline trunc - End")
 logService.info(titleBlock2)
 archive.addLogMessage(titleBlock2)
 
