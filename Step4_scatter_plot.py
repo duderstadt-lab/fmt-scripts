@@ -15,7 +15,7 @@ plt.style.use('seaborn-whitegrid')
 sns.set_style("white")
 
 #Import data
-reaction = pd.read_csv("example.csv")
+reaction = pd.read_csv("Gyrase_Scatter.csv")
 
 #creates a Pandas dataframe
 df = pd.DataFrame(reaction)
@@ -48,7 +48,7 @@ for mulplot in df.groupby('Tag'):
    ypos = mulplot[1]["PosBurstRate"][df['PosBurstRate']>cutdat]
    xneg = mulplot[1]["NegBurstPosition"][df['NegBurstRate']<-cutdat]
    yneg = mulplot[1]["NegBurstRate"][df['NegBurstRate']<-cutdat]
-   if mulplot[0] == "noBreak": 
+   if mulplot[0] == "noBreak":
 
        ax_main.scatter(xpos,ypos,s = 20,c = cpos)
        ax_main.scatter(xneg,yneg,s = 20,c = cneg)
@@ -65,12 +65,12 @@ for mulplot in df.groupby('Tag'):
 
        ax_main.scatter(xpos,ypos,s = 30,c = ctor, edgecolors='black', linewidths=0.5)
        ax_main.scatter(xneg,yneg,s = 30,c = ctor, edgecolors='black', linewidths=0.5)
-       
+
 ax_main.set_xlim((xstart, xend))
-ax_main.set_ylim((-1.7, 3))             
+ax_main.set_ylim((-1.7, 3))
 ax_top.set_xlim((xstart, xend))
 ax_bottom.set_xlim((xstart, xend))
 #plt.rcParams.update({'font.size': 20})
 plt.rc('font', size=20)
-plt.savefig("bubblepos.png")
+plt.savefig("Gyrase_Scatter.png")
 plt.show()

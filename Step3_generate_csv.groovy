@@ -42,7 +42,7 @@ archive.getMoleculeUIDs().parallelStream()\
 
 //    if (molecule.getParameter("activity_score") < 12)
 //    	return
-	
+
     RatesObs obs = new RatesObs()
     obs.UIDCol = UID
 
