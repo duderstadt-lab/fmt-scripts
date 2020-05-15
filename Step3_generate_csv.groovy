@@ -184,7 +184,7 @@ for (RatesObs obs : observations.values()) {
     row++
 }
 
-ratesTable.saveAsCSV(archive.getFile().getParent() + "/RatesTablewostuckForce.csv")
+ratesTable.saveAsCSV(archive.getFile().getParent() + "/Gyrase_Scatter.csv")
 
 println("Generated rates table for " + archive.getFile().getName())
 
