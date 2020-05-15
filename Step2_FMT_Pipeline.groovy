@@ -1,11 +1,7 @@
 @ MoleculeArchive archive
-<<<<<<< HEAD:FMT_Pipeline2.groovy
-//setting all the thresholds
-=======
->>>>>>> 777824d5ff1e6de1a15c10cd223be3c3d8262b54:Step2_FMT_Pipeline.groovy
 #@ Double (value=0.05) stuckRevThreshold
-#@ Double (value=0.01) stuckMSDThresholdx
-#@ Double (value=0.02) stuckMSDThresholdy
+#@ Double (value=0.01) stuckVarianceThresholdx
+#@ Double (value=0.02) stuckVarianceThresholdy
 #@ Integer (value=4500) minLength
 #@ Double (value=6) reversalLowerBound
 #@ Double (value=12) reversalUpperBound
@@ -42,22 +38,17 @@ import org.scijava.table.*
 
 archive.lock()
 
-<<<<<<< HEAD:FMT_Pipeline2.groovy
-//BUILD LOG - recording all the parameter thresholds used
-String titleBlock = LogBuilder.buildTitleBlock("FMT Pipeline - Start")
-=======
 //test
 //BUILD LOG
 String titleBlock = LogBuilder.buildTitleBlock("FMT Pipeline trunc - Start")
->>>>>>> 777824d5ff1e6de1a15c10cd223be3c3d8262b54:Step2_FMT_Pipeline.groovy
 logService.info(titleBlock)
 archive.logln(titleBlock)
 
 logger = new LogBuilder()
 logger.addParameter("FMT Pipeline truncated version", 1)
 logger.addParameter("stuckRevThreshold", stuckRevThreshold)
-logger.addParameter("stuckMSDThresholdx", stuckMSDThresholdx)
-logger.addParameter("stuckMSDThresholdy", stuckMSDThresholdy)
+logger.addParameter("stuckVarianceThresholdx", stuckVarianceThresholdx)
+logger.addParameter("stuckVarianceThresholdy", stuckVarianceThresholdy)
 logger.addParameter("minLength", minLength)
 logger.addParameter("doubleCoilingLowerBound", doubleCoilingLowerBound)
 logger.addParameter("doubleCoilingUpperBound", doubleCoilingUpperBound)
@@ -91,24 +82,6 @@ archive.addLogMessage(parameterList)
 
 //DONE BUILDING LOG
 
-<<<<<<< HEAD:FMT_Pipeline2.groovy
-//Check to make sure there is only one metadata item
-if (archive.getNumberOfMetadatas() > 1) {
-	logService.info(logger.buildParameterList())
-	logService.info("More than one MarsMetadata item found - aborting.")
-	logService.info(LogBuilder.endBlock(false))
-
-	archive.addLogMessage(logger.buildParameterList())
-	archive.addLogMessage("More than one MarsMetadata item found - aborting.")
-	archive.addLogMessage(LogBuilder.endBlock(false));
-
-	archive.unlock()
-
-	return;
-}
-
-=======
->>>>>>> 777824d5ff1e6de1a15c10cd223be3c3d8262b54:Step2_FMT_Pipeline.groovy
 //Get regions
 MarsMetadata metadata = archive.getMetadata(0);
 
@@ -159,11 +132,11 @@ archive.getMoleculeUIDs().parallelStream().forEach({ UID ->
 
 	//Enzymatic Activity Detection
 	RegionDifferenceCalculatorCommand.calcRegionDifference(molecule, "slice", "x", Before_Enzyme, After_Enzyme, "enzymatic")
-	
-	//MSDCalculatorCommand.calcMSD(molecule, column, parameterName)
-	//MSD
-	MSDCalculatorCommand.calcMSD(molecule, "x", "x_MSD")
-	MSDCalculatorCommand.calcMSD(molecule, "y", "y_MSD")
+
+	//VarianceCalculatorCommand.calcVariance(molecule, column, parameterName)
+	//Variance
+	VarianceCalculatorCommand.calcVariance(molecule, "x", "x_Variance")
+	VarianceCalculatorCommand.calcVariance(molecule, "y", "y_Variance")
 
 	//Calculate slopes
 	output = table.linearRegression("slice","x", Slope_Neg_20.getStart(), Slope_Neg_20.getEnd())
@@ -176,11 +149,11 @@ archive.getMoleculeUIDs().parallelStream().forEach({ UID ->
 			molecule.addTag("stuckRev")
 		}
 
-	//stuckMSD
+	//stuckVariance
 	if (molecule.hasTag("stuckRev") &&\
-		molecule.getParameter("x_MSD") < stuckMSDThresholdx &&\
-		molecule.getParameter("y_MSD") < stuckMSDThresholdy) {
-			molecule.addTag("stuckMSD")
+		molecule.getParameter("x_Variance") < stuckVarianceThresholdx &&\
+		molecule.getParameter("y_Variance") < stuckVarianceThresholdy) {
+			molecule.addTag("stuckVariance")
 	}
 
 	//coilable20
@@ -267,7 +240,7 @@ archive.addLogMessage(LogBuilder.endBlock())
 
 //Drift Calculator
 logService.info("Calculating drift...")
-DriftCalculatorCommand.calcDrift(archive, "stuckMSD", "x", "y", "x_drift", "y_drift", false, "mean", "end")
+DriftCalculatorCommand.calcDrift(archive, "stuckVariance", "x", "y", "x_drift", "y_drift", false, "mean", "end")
 
 //Drift Corrector
 logService.info("Correcting for drift...")
@@ -279,12 +252,12 @@ archive.getMoleculeUIDs().parallelStream().forEach{ UID ->
       Molecule molecule = archive.get(UID)
       MarsTable table = molecule.getDataTable()
 
-	 double msdForce = table.msd("y_drift_corr", "slice", Force2p5.getStart(), Force2p5.getEnd())   //inserts different start and stop slice with each loop
+	 double varianceForce = table.variance("y_drift_corr", "slice", Force2p5.getStart(), Force2p5.getEnd())   //inserts different start and stop slice with each loop
 
-	 msdForce = msdForce*conversionPixelToMicron*conversionPixelToMicron
+	 varianceForce = varianceForce*conversionPixelToMicron*conversionPixelToMicron
 	 double[] solution;
 	 try {
-	 	solution = MarsMath.calculateForceAndLength(persistenceLength, contourLength, temperature, msdForce);
+	 	solution = MarsMath.calculateForceAndLength(persistenceLength, contourLength, temperature, varianceForce);
 	 } catch (Exception e) {
 	 	return;
 	 }
@@ -297,34 +270,34 @@ archive.getMoleculeUIDs().parallelStream().forEach{ UID ->
 	 molecule.setParameter(force1, force);
 	 molecule.setParameter(length1, length);
 
-	 DoubleColumn msdColSlide = new DoubleColumn("MSDs")
+	 DoubleColumn varianceColSlide = new DoubleColumn("Variances")
 
-	  double MaxMSD = 0
-	  double MinMSD = 0
+	  double MaxVariance = 0
+	  double MinVariance = 0
 
       for (int row = 0; row < table.getRowCount() - slidingForceWindow; row++) {
 	      	if (table.get("slice",row) >= Force2p5.getStart() && table.get("slice",row) <= Force2p5.getEnd() && table.getRowCount() > row + slidingForceWindow) {
-				double msdSlideForce = table.msd("y_drift_corr","slice",table.get("slice",row),table.get("slice",row + slidingForceWindow))
+				double varianceSlideForce = table.variance("y_drift_corr","slice",table.get("slice",row),table.get("slice",row + slidingForceWindow))
 
-				if (msdSlideForce > MaxMSD)
-					MaxMSD = msdSlideForce
+				if (varianceSlideForce > MaxVariance)
+					MaxVariance = varianceSlideForce
 
-				if (msdSlideForce < MinMSD)
-					MinMSD = msdSlideForce
+				if (varianceSlideForce < MinVariance)
+					MinVariance = varianceSlideForce
 
-				msdColSlide.add(msdSlideForce)
+				varianceColSlide.add(varianceSlideForce)
 	      	}
 	  }
 
-	  MarsTable tempTable = new MarsTable("MSDs table")
-	  tempTable.add(msdColSlide)
+	  MarsTable tempTable = new MarsTable("Variances table")
+	  tempTable.add(varianceColSlide)
 
-	  double msdSTD = tempTable.std("MSDs")
-	  double meanMSD = tempTable.mean("MSDs")
+	  double varianceSTD = tempTable.std("Variances")
+	  double meanVariance = tempTable.mean("Variances")
 
-	  if (msdSTD*stdSlidingForce > Math.abs(MaxMSD - meanMSD)) {
+	  if (varianceSTD*stdSlidingForce > Math.abs(MaxVariance - meanVariance)) {
 	  	molecule.addTag("stuckForce")
-	  } else if (msdSTD*stdSlidingForce > Math.abs(meanMSD - MinMSD)) {
+	  } else if (varianceSTD*stdSlidingForce > Math.abs(meanVariance - MinVariance)) {
 	  	molecule.addTag("stuckForce")
 	  }
 

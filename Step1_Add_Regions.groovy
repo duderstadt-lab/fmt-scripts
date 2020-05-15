@@ -4,11 +4,7 @@ import de.mpg.biochem.mars.molecule.*
 import de.mpg.biochem.mars.table.*
 import de.mpg.biochem.mars.util.*
 
-<<<<<<< HEAD:Add_Regions.groovy
 MarsMetadata metadata = archive.getMetadata(0)
-=======
-MarsMetadata metadata = archive.getMetadata(0);
->>>>>>> 777824d5ff1e6de1a15c10cd223be3c3d8262b54:Step1_Add_Regions.groovy
 
 archive.lock()
 //MarsRegion(name, column, start, end, hex color, opacity (0-1))
