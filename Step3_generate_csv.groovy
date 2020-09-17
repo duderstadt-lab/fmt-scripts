@@ -1,3 +1,29 @@
+/*******************************************************************************
+ * Copyright (C) 2020, Duderstadt Lab
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ ******************************************************************************/
 #@ MoleculeArchive archive
 #@OUTPUT MarsTable table
 #@ ImageJ ij
@@ -35,7 +61,7 @@ archive.getMoleculeUIDs().parallelStream()\
 //.filter{ UID -> !archive.moleculeHasTag(UID, "stuckForce")}\
 .forEach{ UID ->
     Molecule molecule = archive.get(UID)
-    MarsTable table = molecule.getDataTable()
+    MarsTable table = molecule.getTable()
 
     if (table == null)
         return
@@ -66,8 +92,8 @@ archive.getMoleculeUIDs().parallelStream()\
     //positive coil slope burst
    if (!Double.isNaN(molecule.getParameter("pos_coil_slope"))) {
        double timeWindowSize = 12.5
-       double startTime = archive.getMetadata(0).getDataTable().rowStream().filter{row -> row.getValue("slice") == Gyrase_Reaction.getStart()}.findFirst().get().getValue("Time (s)")
-       double endTime = archive.getMetadata(0).getDataTable().rowStream().filter{row -> row.getValue("slice") == Gyrase_Reaction.getEnd()}.findFirst().get().getValue("Time (s)")
+       double startTime = archive.getMetadata(0).getTable().rowStream().filter{row -> row.getValue("T") == Gyrase_Reaction.getStart()}.findFirst().get().getValue("Time (s)")
+       double endTime = archive.getMetadata(0).getTable().rowStream().filter{row -> row.getValue("T") == Gyrase_Reaction.getEnd()}.findFirst().get().getValue("Time (s)")
 
        if (table.getValue("Time (s)", table.getRowCount()-1) < endTime) {
          endTime = table.getValue("Time (s)", table.getRowCount()-1) - 4
@@ -114,8 +140,8 @@ archive.getMoleculeUIDs().parallelStream()\
     //negative coil slope burst
     if (!molecule.hasTag("chi") && !Double.isNaN(molecule.getParameter("neg_coil_slope"))) {
         double timeWindowSize = 25
-        double startTime = archive.getMetadata(0).getDataTable().rowStream().filter{row -> row.getValue("slice") == Gyrase_Reaction.getStart()}.findFirst().get().getValue("Time (s)")
-        double endTime = archive.getMetadata(0).getDataTable().rowStream().filter{row -> row.getValue("slice") == Gyrase_Reaction.getEnd()}.findFirst().get().getValue("Time (s)")
+        double startTime = archive.getMetadata(0).getTable().rowStream().filter{row -> row.getValue("T") == Gyrase_Reaction.getStart()}.findFirst().get().getValue("Time (s)")
+        double endTime = archive.getMetadata(0).getTable().rowStream().filter{row -> row.getValue("T") == Gyrase_Reaction.getEnd()}.findFirst().get().getValue("Time (s)")
 
         if (table.getValue("Time (s)", table.getRowCount()-1) < endTime) {
           endTime = table.getValue("Time (s)", table.getRowCount()-1) - 4

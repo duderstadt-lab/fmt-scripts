@@ -1,3 +1,29 @@
+/*******************************************************************************
+ * Copyright (C) 2020, Duderstadt Lab
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ ******************************************************************************/
 @ MoleculeArchive archive
 #@ Double (value=0.05) stuckRevThreshold
 #@ Double (value=0.01) stuckVarianceThresholdx
@@ -17,7 +43,7 @@
 #@ Double (value=-0.1) alphaUpperBound
 #@ Double (value=0.2) chiLowerBound
 #@ Double (value=5) chiUpperBound
-#@ Double (value=0.25) turns_per_slice
+#@ Double (value=0.25) turns_per_T
 #@ Double (value=2) turns_per_cycle
 #@ Integer (value=1600) driftZeroRegionStart
 #@ Integer (value=1700) driftZeroRegionEnd
@@ -30,9 +56,10 @@
 #@ ImageJ ij
 #@ LogService logService
 
-import de.mpg.biochem.mars.molecule.*;
-import de.mpg.biochem.mars.table.*;
-import de.mpg.biochem.mars.util.*;
+import de.mpg.biochem.mars.molecule.*
+import de.mpg.biochem.mars.metadata.*
+import de.mpg.biochem.mars.table.*
+import de.mpg.biochem.mars.util.*
 import de.mpg.biochem.mars.molecule.commands.*
 import org.scijava.table.*
 
@@ -45,7 +72,7 @@ logService.info(titleBlock)
 archive.logln(titleBlock)
 
 logger = new LogBuilder()
-logger.addParameter("FMT Pipeline truncated version", 1)
+logger.addParameter("FMT Pipeline truncated version", 2)
 logger.addParameter("stuckRevThreshold", stuckRevThreshold)
 logger.addParameter("stuckVarianceThresholdx", stuckVarianceThresholdx)
 logger.addParameter("stuckVarianceThresholdy", stuckVarianceThresholdy)
@@ -60,7 +87,7 @@ logger.addParameter("chiLowerBound", chiLowerBound)
 logger.addParameter("chiUpperBound", chiUpperBound)
 logger.addParameter("coilable20LowerBound", coilable20LowerBound)
 logger.addParameter("coilable20UpperBound", coilable20UpperBound)
-logger.addParameter("turns_per_slice", turns_per_slice)
+logger.addParameter("turns_per_T", turns_per_T)
 logger.addParameter("turns_per_cycle", turns_per_cycle)
 logger.addParameter("driftZeroRegionStart", driftZeroRegionStart)
 logger.addParameter("conversionPixelToMicron", conversionPixelToMicron)
@@ -117,21 +144,21 @@ AddTimeCommand.addTime(archive)
 logService.info("Calculating region differences and adding tags...")
 archive.getMoleculeUIDs().parallelStream().forEach({ UID ->
 	Molecule molecule = archive.get(UID)
-	MarsTable table = molecule.getDataTable()
+	MarsTable table = molecule.getTable()
 
 	//RegionDifferenceCalculatorCommand.calcRegionDifference(molecule, xColumn, yColumn, regionOne, regionTwo, parameterName)
     //coil20
-	RegionDifferenceCalculatorCommand.calcRegionDifference(molecule, "slice", "x", coil20_Positive_Peak, coil20_Negative_Peak, "coil20")
+	RegionDifferenceCalculatorCommand.calcRegionDifference(molecule, "T", "x", coil20_Positive_Peak, coil20_Negative_Peak, "coil20")
 
 	//coil2p5
-	RegionDifferenceCalculatorCommand.calcRegionDifference(molecule, "slice", "x", coil2p5_Peak, coil2p5_Background, "coil2p5")
+	RegionDifferenceCalculatorCommand.calcRegionDifference(molecule, "T", "x", coil2p5_Peak, coil2p5_Background, "coil2p5")
 
 	//First Reversal
-	RegionDifferenceCalculatorCommand.calcRegionDifference(molecule, "slice", "x", First_Reversal_RF, First_Reversal_FF, "rev_begin_x")
-	RegionDifferenceCalculatorCommand.calcRegionDifference(molecule, "slice", "y", First_Reversal_RF, First_Reversal_FF, "rev_begin_y")
+	RegionDifferenceCalculatorCommand.calcRegionDifference(molecule, "T", "x", First_Reversal_RF, First_Reversal_FF, "rev_begin_x")
+	RegionDifferenceCalculatorCommand.calcRegionDifference(molecule, "T", "y", First_Reversal_RF, First_Reversal_FF, "rev_begin_y")
 
 	//Enzymatic Activity Detection
-	RegionDifferenceCalculatorCommand.calcRegionDifference(molecule, "slice", "x", Before_Enzyme, After_Enzyme, "enzymatic")
+	RegionDifferenceCalculatorCommand.calcRegionDifference(molecule, "T", "x", Before_Enzyme, After_Enzyme, "enzymatic")
 
 	//VarianceCalculatorCommand.calcVariance(molecule, column, parameterName)
 	//Variance
@@ -139,7 +166,7 @@ archive.getMoleculeUIDs().parallelStream().forEach({ UID ->
 	VarianceCalculatorCommand.calcVariance(molecule, "y", "y_Variance")
 
 	//Calculate slopes
-	output = table.linearRegression("slice","x", Slope_Neg_20.getStart(), Slope_Neg_20.getEnd())
+	output = table.linearRegression("T","x", Slope_Neg_20.getStart(), Slope_Neg_20.getEnd())
 	molecule.setParameter("Slope_Neg_20", output[2])
 
     //Add Tags
@@ -187,8 +214,8 @@ archive.getMoleculeUIDs().parallelStream().forEach({ UID ->
 	}
 
 	//shortTrajectory
-	int deadSlice = table.getValue("slice",table.getRowCount()-1)
-	if (deadSlice < minLength)
+	int deadT = table.getValue("T",table.getRowCount()-1)
+	if (deadT < minLength)
 		molecule.addTag("shortTrajectory")
 
 	//singleTether
@@ -222,14 +249,14 @@ archive.getMoleculeUIDs().parallelStream().forEach({ UID ->
 
 	//tagging track loss and bead loss
 
-	if (deadSlice < Magrot_20f.getEnd() && deadSlice > Magrot_20f.getStart()) {
+	if (deadT < Magrot_20f.getEnd() && deadT > Magrot_20f.getStart()) {
 		molecule.addTag("Magrot20f")
 	}
-	if (deadSlice < Magrot_2p5f.getEnd() && deadSlice > Magrot_2p5f.getStart()) {
+	if (deadT < Magrot_2p5f.getEnd() && deadT > Magrot_2p5f.getStart()) {
 		molecule.addTag("Magrot2p5f")
 	}
 
-	if (deadSlice < Gyrase_Reaction.getEnd() && deadSlice > Gyrase_Reaction.getStart()) {
+	if (deadT < Gyrase_Reaction.getEnd() && deadT > Gyrase_Reaction.getStart()) {
     molecule.addTag("Gyrase_Break")
 	}
 
@@ -250,9 +277,9 @@ DriftCorrectorCommand.correctDrift(archive, driftZeroRegionStart, driftZeroRegio
 logService.info("Calculating force...")
 archive.getMoleculeUIDs().parallelStream().forEach{ UID ->
       Molecule molecule = archive.get(UID)
-      MarsTable table = molecule.getDataTable()
+      MarsTable table = molecule.getTable()
 
-	 double varianceForce = table.variance("y_drift_corr", "slice", Force2p5.getStart(), Force2p5.getEnd())   //inserts different start and stop slice with each loop
+	 double varianceForce = table.variance("y_drift_corr", "T", Force2p5.getStart(), Force2p5.getEnd())   //inserts different start and stop T with each loop
 
 	 varianceForce = varianceForce*conversionPixelToMicron*conversionPixelToMicron
 	 double[] solution;
@@ -276,8 +303,8 @@ archive.getMoleculeUIDs().parallelStream().forEach{ UID ->
 	  double MinVariance = 0
 
       for (int row = 0; row < table.getRowCount() - slidingForceWindow; row++) {
-	      	if (table.get("slice",row) >= Force2p5.getStart() && table.get("slice",row) <= Force2p5.getEnd() && table.getRowCount() > row + slidingForceWindow) {
-				double varianceSlideForce = table.variance("y_drift_corr","slice",table.get("slice",row),table.get("slice",row + slidingForceWindow))
+	      	if (table.get("T",row) >= Force2p5.getStart() && table.get("T",row) <= Force2p5.getEnd() && table.getRowCount() > row + slidingForceWindow) {
+				double varianceSlideForce = table.variance("y_drift_corr","T",table.get("T",row),table.get("T",row + slidingForceWindow))
 
 				if (varianceSlideForce > MaxVariance)
 					MaxVariance = varianceSlideForce
@@ -308,29 +335,29 @@ archive.getMoleculeUIDs().parallelStream().forEach{ UID ->
 logService.info("Calculating molecule-by-molecule cycle numbers...")
 archive.getMoleculeUIDs().parallelStream().forEach({ UID ->
       Molecule molecule = archive.get(UID)
-      MarsTable table = molecule.getDataTable()
+      MarsTable table = molecule.getTable()
 
-	  double[] pos_coils_per_slice = table.linearRegression("slice", "x_drift_corr", Positive_Coiling_Slope.getStart(), Positive_Coiling_Slope.getEnd())
+	  double[] pos_coils_per_T = table.linearRegression("T", "x_drift_corr", Positive_Coiling_Slope.getStart(), Positive_Coiling_Slope.getEnd())
 
-	  molecule.setParameter("pos_coil_slope", pos_coils_per_slice[2])
+	  molecule.setParameter("pos_coil_slope", pos_coils_per_T[2])
 
 	  	if (!table.hasColumn("poscycles"))
 			table.appendColumn("poscycles")
 
 		for (int row = 0; row < table.getRowCount(); row++) {
-			double conversion = (-1)*(turns_per_slice/pos_coils_per_slice[2])/turns_per_cycle
+			double conversion = (-1)*(turns_per_T/pos_coils_per_T[2])/turns_per_cycle
 			table.setValue("poscycles", row, conversion*table.getValue("x_drift_corr", row))
 		}
 
-	  double[] neg_coils_per_slice = table.linearRegression("slice", "x_drift_corr", Negative_Coiling_Slope.getStart(), Negative_Coiling_Slope.getEnd())
+	  double[] neg_coils_per_T = table.linearRegression("T", "x_drift_corr", Negative_Coiling_Slope.getStart(), Negative_Coiling_Slope.getEnd())
 
-	  molecule.setParameter("neg_coil_slope", neg_coils_per_slice[2])
+	  molecule.setParameter("neg_coil_slope", neg_coils_per_T[2])
 
 	  	if (!table.hasColumn("negcycles"))
 			table.appendColumn("negcycles")
 
 		for (int row = 0; row < table.getRowCount(); row++) {
-			double conversion = (1)*(turns_per_slice/neg_coils_per_slice[2])/turns_per_cycle
+			double conversion = (1)*(turns_per_T/neg_coils_per_T[2])/turns_per_cycle
 			table.setValue("negcycles", row, conversion*table.getValue("x_drift_corr", row))
 		}
 
@@ -370,13 +397,13 @@ negCoilGlobal = negCoilTable.median("negcoil")
 logService.info("Calculating global cycle numbers...")
 archive.getMoleculeUIDs().parallelStream().forEach({ UID ->
 	      Molecule molecule = archive.get(UID)
-	      MarsTable table = molecule.getDataTable()
+	      MarsTable table = molecule.getTable()
 
 		  	if (!table.hasColumn("negcyclesG"))
 				table.appendColumn("negcyclesG")
 
 			for (int row = 0; row < table.getRowCount(); row++) {
-				double conversion = (1)*(turns_per_slice/negCoilGlobal)/turns_per_cycle
+				double conversion = (1)*(turns_per_T/negCoilGlobal)/turns_per_cycle
 				table.setValue("negcyclesG", row, conversion*table.getValue("x_drift_corr", row))
 			}
 
@@ -384,7 +411,7 @@ archive.getMoleculeUIDs().parallelStream().forEach({ UID ->
 				table.appendColumn("poscyclesG")
 
 			for (int row = 0; row < table.getRowCount(); row++) {
-				double conversion = (-1)*(turns_per_slice/posCoilGlobal)/turns_per_cycle
+				double conversion = (-1)*(turns_per_T/posCoilGlobal)/turns_per_cycle
 				table.setValue("poscyclesG", row, conversion*table.getValue("x_drift_corr", row))
 			}
 
@@ -397,7 +424,7 @@ archive.getMoleculeUIDs().parallelStream()\
 .filter{ UID -> archive.moleculeHasTag(UID, "coilable2p5")}\
 .forEach({ UID ->
     Molecule molecule = archive.get(UID)
-    MarsTable table = molecule.getDataTable()
+    MarsTable table = molecule.getTable()
 
     if (table == null)
         return
@@ -405,16 +432,16 @@ archive.getMoleculeUIDs().parallelStream()\
 	 double startTime = Gyrase_Reaction.getStart()
      double endTime = Gyrase_Reaction.getEnd()
 
-     if (table.getValue("slice", table.getRowCount()-1) < Gyrase_Reaction.getEnd()) {
-       endTime = table.getValue("slice", table.getRowCount()-1) - 10
+     if (table.getValue("T", table.getRowCount()-1) < Gyrase_Reaction.getEnd()) {
+       endTime = table.getValue("T", table.getRowCount()-1) - 10
      }
 
     double gMax = -1000000
     double gMin =1000000
 
     for (int row=0; row<table.getRowCount();row++) {
-        double start = table.getValue("slice", row)
-        double end = table.getValue("slice", row)
+        double start = table.getValue("T", row)
+        double end = table.getValue("T", row)
 
         if (start >= startTime && end <= endTime) {
             double cMax = table.getValue("poscyclesG", row)
