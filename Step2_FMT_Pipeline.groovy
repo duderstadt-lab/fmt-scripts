@@ -24,7 +24,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  ******************************************************************************/
-@ MoleculeArchive archive
+#@ MoleculeArchive archive
 #@ Double (value=0.05) stuckRevThreshold
 #@ Double (value=0.01) stuckVarianceThresholdx
 #@ Double (value=0.02) stuckVarianceThresholdy
@@ -62,8 +62,6 @@ import de.mpg.biochem.mars.table.*
 import de.mpg.biochem.mars.util.*
 import de.mpg.biochem.mars.molecule.commands.*
 import org.scijava.table.*
-
-archive.lock()
 
 //test
 //BUILD LOG
@@ -105,7 +103,7 @@ logger.addParameter("stdSlidingForce", stdSlidingForce)
 
 String parameterList = logger.buildParameterList();
 logService.info(parameterList)
-archive.addLogMessage(parameterList)
+archive.logln(parameterList)
 
 //DONE BUILDING LOG
 
@@ -263,7 +261,7 @@ archive.getMoleculeUIDs().parallelStream().forEach({ UID ->
 	archive.put(molecule)
 })
 
-archive.addLogMessage(LogBuilder.endBlock())
+archive.logln(LogBuilder.endBlock())
 
 //Drift Calculator
 logService.info("Calculating drift...")
@@ -460,14 +458,12 @@ archive.getMoleculeUIDs().parallelStream()\
 })
 String titleBlock2 = LogBuilder.buildTitleBlock("FMT Pipeline trunc - End")
 logService.info(titleBlock2)
-archive.addLogMessage(titleBlock2)
+archive.logln(titleBlock2)
 
 logger2 = new LogBuilder()
 String params = logger2.buildParameterList()
 logService.info(params)
-archive.addLogMessage(params)
+archive.logln(params)
 
 logService.info(LogBuilder.endBlock(true))
-archive.addLogMessage(LogBuilder.endBlock(true))
-
-archive.unlock()
+archive.logln(LogBuilder.endBlock(true))

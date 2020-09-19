@@ -53,8 +53,6 @@ Gyrase_Reaction = archive.getMetadata(0).getRegion("Gyrase Reaction")
 //PosCycles calculation
 def observations = new ConcurrentHashMap<String, RatesObs>()
 
-archive.lock()
-
 archive.getMoleculeUIDs().parallelStream()\
 .filter{ UID -> archive.moleculeHasTag(UID, "singleTether")}\
 .filter{ UID -> archive.moleculeHasTag(UID, "coilable2p5")}\
@@ -92,8 +90,8 @@ archive.getMoleculeUIDs().parallelStream()\
     //positive coil slope burst
    if (!Double.isNaN(molecule.getParameter("pos_coil_slope"))) {
        double timeWindowSize = 12.5
-       double startTime = archive.getMetadata(0).getTable().rowStream().filter{row -> row.getValue("T") == Gyrase_Reaction.getStart()}.findFirst().get().getValue("Time (s)")
-       double endTime = archive.getMetadata(0).getTable().rowStream().filter{row -> row.getValue("T") == Gyrase_Reaction.getEnd()}.findFirst().get().getValue("Time (s)")
+       double startTime = archive.getMetadata(0).getPlane(0, 0, 0, (int) Gyrase_Reaction.getStart()).getDeltaTinSeconds()
+       double endTime = archive.getMetadata(0).getPlane(0, 0, 0, (int) Gyrase_Reaction.getEnd()).getDeltaTinSeconds()
 
        if (table.getValue("Time (s)", table.getRowCount()-1) < endTime) {
          endTime = table.getValue("Time (s)", table.getRowCount()-1) - 4
@@ -140,8 +138,8 @@ archive.getMoleculeUIDs().parallelStream()\
     //negative coil slope burst
     if (!molecule.hasTag("chi") && !Double.isNaN(molecule.getParameter("neg_coil_slope"))) {
         double timeWindowSize = 25
-        double startTime = archive.getMetadata(0).getTable().rowStream().filter{row -> row.getValue("T") == Gyrase_Reaction.getStart()}.findFirst().get().getValue("Time (s)")
-        double endTime = archive.getMetadata(0).getTable().rowStream().filter{row -> row.getValue("T") == Gyrase_Reaction.getEnd()}.findFirst().get().getValue("Time (s)")
+        double startTime = archive.getMetadata(0).getPlane(0, 0, 0, (int) Gyrase_Reaction.getStart()).getDeltaTinSeconds()
+        double endTime = archive.getMetadata(0).getPlane(0, 0, 0, (int) Gyrase_Reaction.getEnd()).getDeltaTinSeconds()
 
         if (table.getValue("Time (s)", table.getRowCount()-1) < endTime) {
           endTime = table.getValue("Time (s)", table.getRowCount()-1) - 4
@@ -188,14 +186,14 @@ archive.getMoleculeUIDs().parallelStream()\
 
 }
 
-  	ratesTable = new MarsTable()
-	ratesTable.add(new DoubleColumn("PosBurstRate"))
-	ratesTable.add(new DoubleColumn("PosBurstPosition"))
-  	ratesTable.add(new DoubleColumn("NegBurstRate"))
-	ratesTable.add(new DoubleColumn("NegBurstPosition"))
-  	ratesTable.add(new DoubleColumn("Force"))
-	ratesTable.add(new GenericColumn("UID"))
-  	ratesTable.add(new GenericColumn("Tag"))
+ratesTable = new MarsTable()
+ratesTable.add(new DoubleColumn("PosBurstRate"))
+ratesTable.add(new DoubleColumn("PosBurstPosition"))
+ratesTable.add(new DoubleColumn("NegBurstRate"))
+ratesTable.add(new DoubleColumn("NegBurstPosition"))
+ratesTable.add(new DoubleColumn("Force"))
+ratesTable.add(new GenericColumn("UID"))
+ratesTable.add(new GenericColumn("Tag"))
 
 int row = 0
 for (RatesObs obs : observations.values()) {
@@ -213,7 +211,5 @@ for (RatesObs obs : observations.values()) {
 ratesTable.saveAsCSV(archive.getFile().getParent() + "/Gyrase_Scatter.csv")
 
 println("Generated rates table for " + archive.getFile().getName())
-
-archive.unlock()
 
 println("Done!!!")
