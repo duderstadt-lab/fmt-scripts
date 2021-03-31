@@ -265,11 +265,11 @@ archive.logln(LogBuilder.endBlock())
 
 //Drift Calculator
 logService.info("Calculating drift...")
-DriftCalculatorCommand.calcDrift(archive, "stuckVariance", "x", "y", "x_drift", "y_drift", false, "mean", "end")
+ArchiveUtils.calculateDrift(archive, "stuckVariance", "x", "y", false, "mean", "end")
 
 //Drift Corrector
 logService.info("Correcting for drift...")
-DriftCorrectorCommand.correctDrift(archive, driftZeroRegionStart, driftZeroRegionEnd, "x_drift", "y_drift", "x", "y", "x_drift_corr", "y_drift_corr", false)
+ArchiveUtils.correctDrift(archive, "x", "y", "x_drift_corr", "y_drift_corr")
 
 //Force Calculation and tagging
 logService.info("Calculating force...")
