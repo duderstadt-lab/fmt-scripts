@@ -93,22 +93,22 @@ archive.getMoleculeUIDs().parallelStream()\
        double startTime = archive.getMetadata(0).getPlane(0, 0, 0, (int) Gyrase_Reaction.getStart()).getDeltaTinSeconds()
        double endTime = archive.getMetadata(0).getPlane(0, 0, 0, (int) Gyrase_Reaction.getEnd()).getDeltaTinSeconds()
 
-       if (table.getValue("Time (s)", table.getRowCount()-1) < endTime) {
-         endTime = table.getValue("Time (s)", table.getRowCount()-1) - 4
+       if (table.getValue("Time_(s)", table.getRowCount()-1) < endTime) {
+         endTime = table.getValue("Time_(s)", table.getRowCount()-1) - 4
        }
 
   	    //First find max value position and set as new end point
   	    double newEndPoint = endTime
   	    double gMax = 0
   	    for (int row=0; row<table.getRowCount();row++) {
-  	        double start = table.getValue("Time (s)", row)
-  	        double end = table.getValue("Time (s)", row) + timeWindowSize
+  	        double start = table.getValue("Time_(s)", row)
+  	        double end = table.getValue("Time_(s)", row) + timeWindowSize
 
   	        if (start >= startTime && end <= endTime) {
   	            double cMax = table.getValue("poscyclesG", row)
   	            if (gMax < cMax) {
   	                gMax = cMax
-  	                newEndPoint = table.getValue("Time (s)", row)
+  	                newEndPoint = table.getValue("Time_(s)", row)
   	            }
   	        }
   	    }
@@ -119,14 +119,14 @@ archive.getMoleculeUIDs().parallelStream()\
       	double[] linearFit = new double[4]
 
       	for (int row=0; row<table.getRowCount();row++) {
-      	    double start = table.getValue("Time (s)", row)
-      	    double end = table.getValue("Time (s)", row) + timeWindowSize
+      	    double start = table.getValue("Time_(s)", row)
+      	    double end = table.getValue("Time_(s)", row) + timeWindowSize
 
       	    if (start >= startTime && end <= endTime) {
-      	        linearFit = table.linearRegression("Time (s)", "poscyclesG", start, end)
+      	        linearFit = table.linearRegression("Time_(s)", "poscyclesG", start, end)
       	        if (maxRate < linearFit[2]) {
       	            maxRate = linearFit[2]
-      	            maxPos = table.getValue("Time (s)", row) + timeWindowSize/2
+      	            maxPos = table.getValue("Time_(s)", row) + timeWindowSize/2
       	        }
       	    }
       	}
@@ -141,22 +141,22 @@ archive.getMoleculeUIDs().parallelStream()\
         double startTime = archive.getMetadata(0).getPlane(0, 0, 0, (int) Gyrase_Reaction.getStart()).getDeltaTinSeconds()
         double endTime = archive.getMetadata(0).getPlane(0, 0, 0, (int) Gyrase_Reaction.getEnd()).getDeltaTinSeconds()
 
-        if (table.getValue("Time (s)", table.getRowCount()-1) < endTime) {
-          endTime = table.getValue("Time (s)", table.getRowCount()-1) - 4
+        if (table.getValue("Time_(s)", table.getRowCount()-1) < endTime) {
+          endTime = table.getValue("Time_(s)", table.getRowCount()-1) - 4
         }
 
   	    //First find min value position and set as new start point
   	    double newStartPoint = startTime
   	    double gMin = 100000
   	    for (int row=0; row<table.getRowCount();row++) {
-  	        double start = table.getValue("Time (s)", row)
-  	        double end = table.getValue("Time (s)", row) + timeWindowSize
+  	        double start = table.getValue("Time_(s)", row)
+  	        double end = table.getValue("Time_(s)", row) + timeWindowSize
 
   	        if (start >= startTime && end <= endTime) {
   	            double cMin = table.getValue("negcyclesG", row)
   	            if (gMin > cMin) {
   	                gMin = cMin
-  	                newStartPoint = table.getValue("Time (s)", row)
+  	                newStartPoint = table.getValue("Time_(s)", row)
   	            }
   	        }
   	    }
@@ -167,14 +167,14 @@ archive.getMoleculeUIDs().parallelStream()\
       	double[] linearFit = new double[4]
 
       	for (int row=0; row<table.getRowCount();row++) {
-      	    double start = table.getValue("Time (s)", row)
-      	    double end = table.getValue("Time (s)", row) + timeWindowSize
+      	    double start = table.getValue("Time_(s)", row)
+      	    double end = table.getValue("Time_(s)", row) + timeWindowSize
 
       	    if (start >= startTime && end <= endTime) {
-      	        linearFit = table.linearRegression("Time (s)", "negcyclesG", start, end)
+      	        linearFit = table.linearRegression("Time_(s)", "negcyclesG", start, end)
       	        if (maxRate < linearFit[2]) {
       	            maxRate = linearFit[2]
-      	            maxPos = table.getValue("Time (s)", row) + timeWindowSize/2
+      	            maxPos = table.getValue("Time_(s)", row) + timeWindowSize/2
       	        }
       	    }
       	}

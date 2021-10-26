@@ -146,25 +146,25 @@ archive.getMoleculeUIDs().parallelStream().forEach({ UID ->
 
 	//RegionDifferenceCalculatorCommand.calcRegionDifference(molecule, xColumn, yColumn, regionOne, regionTwo, parameterName)
     //coil20
-	RegionDifferenceCalculatorCommand.calcRegionDifference(molecule, "T", "x", coil20_Positive_Peak, coil20_Negative_Peak, "coil20")
+	RegionDifferenceCalculatorCommand.calcRegionDifference(molecule, "T", "X", coil20_Positive_Peak, coil20_Negative_Peak, "coil20")
 
 	//coil2p5
-	RegionDifferenceCalculatorCommand.calcRegionDifference(molecule, "T", "x", coil2p5_Peak, coil2p5_Background, "coil2p5")
+	RegionDifferenceCalculatorCommand.calcRegionDifference(molecule, "T", "X", coil2p5_Peak, coil2p5_Background, "coil2p5")
 
 	//First Reversal
-	RegionDifferenceCalculatorCommand.calcRegionDifference(molecule, "T", "x", First_Reversal_RF, First_Reversal_FF, "rev_begin_x")
-	RegionDifferenceCalculatorCommand.calcRegionDifference(molecule, "T", "y", First_Reversal_RF, First_Reversal_FF, "rev_begin_y")
+	RegionDifferenceCalculatorCommand.calcRegionDifference(molecule, "T", "X", First_Reversal_RF, First_Reversal_FF, "rev_begin_x")
+	RegionDifferenceCalculatorCommand.calcRegionDifference(molecule, "T", "Y", First_Reversal_RF, First_Reversal_FF, "rev_begin_y")
 
 	//Enzymatic Activity Detection
-	RegionDifferenceCalculatorCommand.calcRegionDifference(molecule, "T", "x", Before_Enzyme, After_Enzyme, "enzymatic")
+	RegionDifferenceCalculatorCommand.calcRegionDifference(molecule, "T", "Y", Before_Enzyme, After_Enzyme, "enzymatic")
 
 	//VarianceCalculatorCommand.calcVariance(molecule, column, parameterName)
 	//Variance
-	VarianceCalculatorCommand.calcVariance(molecule, "x", "x_Variance")
-	VarianceCalculatorCommand.calcVariance(molecule, "y", "y_Variance")
+	VarianceCalculatorCommand.calcVariance(molecule, "X", "x_Variance")
+	VarianceCalculatorCommand.calcVariance(molecule, "Y", "y_Variance")
 
 	//Calculate slopes
-	output = table.linearRegression("T","x", Slope_Neg_20.getStart(), Slope_Neg_20.getEnd())
+	output = table.linearRegression("T","X", Slope_Neg_20.getStart(), Slope_Neg_20.getEnd())
 	molecule.setParameter("Slope_Neg_20", output[2])
 
     //Add Tags
@@ -265,11 +265,11 @@ archive.logln(LogBuilder.endBlock())
 
 //Drift Calculator
 logService.info("Calculating drift...")
-ArchiveUtils.calculateDrift(archive, "stuckVariance", "x", "y", false, "mean", "end")
+ArchiveUtils.calculateDrift(archive, "stuckVariance", "X", "Y", false, "mean", "end")
 
 //Drift Corrector
 logService.info("Correcting for drift...")
-ArchiveUtils.correctDrift(archive, "x", "y", "x_drift_corr", "y_drift_corr")
+ArchiveUtils.correctDrift(archive, "X", "Y", "x_drift_corr", "y_drift_corr")
 
 //Force Calculation and tagging
 logService.info("Calculating force...")
